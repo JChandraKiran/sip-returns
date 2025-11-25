@@ -9,7 +9,7 @@ function DateInput({
   max,
   disabled,
   style,
-  className,
+  className = "DateInput",
 }) {
   return (
     <input

@@ -8,10 +8,6 @@ function App() {
       style={{
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "space-evenly",
-        height: "100vh",
-        width: "90vw",
         gap: "10px",
       }}
     >

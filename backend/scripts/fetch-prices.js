@@ -56,6 +56,7 @@ async function fetchAndStorePrices() {
         `,
         [values]
       );
+      console.log(`Inserted ${symbol} price in to databse`);
     } else {
       console.warn("⚠️ No valid token prices to insert this cycle.");
     }
