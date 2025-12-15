@@ -1,5 +1,11 @@
 // api/sip-returns.js
-import { getPool } from "../lib/db.js";
+import {
+  fetchHourlyPrices,
+  fetchDailyPrices,
+  fetchWeeklyPrices,
+  fetchMonthlyPrices,
+  fetchCurrentPrice,
+} from "../lib/queries/priceQueries.js";
 
 export default async function handler(req, res) {
   const allowedOrigin =
@@ -12,13 +18,19 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Max-Age", "86400");
 
-  if (req.method !== "POST") {
+  if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { cryptocurrency, method, fromDate, toDate, frequency, amount } =
-    req.body;
-  console.log(frequency);
+  const {
+    cryptocurrency,
+    method,
+    fromDate,
+    toDate,
+    frequency,
+    amount,
+    dayOfWeek,
+  } = req.query;
   if (
     !cryptocurrency ||
     !method ||
@@ -29,160 +41,155 @@ export default async function handler(req, res) {
   ) {
     return res.status(400).json({ error: "Missing required fields" });
   }
+  if (method.toLowerCase() === "dca") {
+    try {
+      const symbol = cryptocurrency.toUpperCase();
+      let rows;
 
-  try {
-    const pool = getPool();
-
-    // Example: symbol mapping
-    const symbol = cryptocurrency.toUpperCase(); // crude 'BTC' from 'btc'
-
-    let query = `
-      SELECT value, timestamp
-      FROM prices
-      WHERE symbol = ?
-        AND DATE(timestamp) >= ?
-        AND DATE(timestamp) <= ?
-    `;
-    let queryParams = [symbol, fromDate, toDate];
-
-    // Apply frequency-based filter
-    if (frequency.toLowerCase() === "daily") {
-      query = `SELECT
-                  DATE(p.timestamp) AS date,
-                  p.value AS value
-              FROM prices p
-              JOIN (
-                  SELECT
-                      symbol,
-                      DATE(timestamp) AS d,
-                      MAX(timestamp) AS max_ts
-                  FROM prices
-                  WHERE symbol = ?
-                    AND DATE(timestamp) >= ?
-                    AND DATE(timestamp) <= ?
-                  GROUP BY symbol, DATE(timestamp)
-              ) t
-                ON t.max_ts = p.timestamp
-                AND p.symbol = t.symbol
-              WHERE p.symbol = ?
-                AND DATE(p.timestamp) >= ?
-                AND DATE(p.timestamp) <= ?
-              ORDER BY date;
-                `;
-      queryParams = [symbol, fromDate, toDate, symbol, fromDate, toDate];
-    } else if (frequency.toLowerCase() === "10 days") {
-      query = `
-                SELECT
-                  DATE(p.timestamp) AS the_day,
-                  p.value AS value,
-                  p.timestamp AS date
-                FROM prices p
-                WHERE p.symbol = ?
-                  AND DATE(p.timestamp) >= ?
-                  AND DATE(p.timestamp) <= ?
-                  AND p.timestamp = (
-                    SELECT MAX(p2.timestamp)
-                    FROM prices p2
-                    WHERE p2.symbol = p.symbol
-                      AND DATE(p2.timestamp) = DATE(p.timestamp)
-                  )
-                  AND MOD(DATEDIFF(DATE(p.timestamp), ?), 10) = 0
-                ORDER BY DATE(p.timestamp);
-              `;
-      queryParams = [symbol, fromDate, toDate, fromDate];
-    }
-    console.log("SQL:", query);
-    console.log("PARAMS:", queryParams);
-    const [rows] = await pool.execute(query, queryParams);
-    console.log(rows);
-
-    if (!rows.length) {
-      return res.status(404).json({ error: "No data found for given query" });
-    }
-
-    // Fetch daily prices for charting (regardless of investment frequency)
-    const dailyPriceQuery = `SELECT
-                  DATE(p.timestamp) AS date,
-                  p.value AS value,
-                  p.timestamp
-              FROM prices p
-              JOIN (
-                  SELECT
-                      symbol,
-                      DATE(timestamp) AS d,
-                      MAX(timestamp) AS max_ts
-                  FROM prices
-                  WHERE symbol = ?
-                    AND DATE(timestamp) >= ?
-                    AND DATE(timestamp) <= ?
-                  GROUP BY symbol, DATE(timestamp)
-              ) t
-                ON t.max_ts = p.timestamp
-                AND p.symbol = t.symbol
-              WHERE p.symbol = ?
-                AND DATE(p.timestamp) >= ?
-                AND DATE(p.timestamp) <= ?
-              ORDER BY date;`;
-    const [dailyPrices] = await pool.execute(dailyPriceQuery, [symbol, fromDate, toDate, symbol, fromDate, toDate]);
-
-    // Perform the SIP logic on investment dates
-    let totalUnits = 0;
-    let totalValue = 0;
-    let cumulativeInvested = 0;
-
-    // Create a map of investment dates for quick lookup
-    const investmentDates = new Set();
-    for (const row of rows) {
-      const investDate = new Date(row.timestamp || row.date || row.the_day).toISOString().split('T')[0];
-      investmentDates.add(investDate);
-      totalUnits += amount / row.value;
-      totalValue += row.value;
-      cumulativeInvested += amount;
-    }
-
-    // Generate chart data with daily prices but investment-based portfolio calculation
-    const chartData = [];
-    let runningUnits = 0;
-    let runningInvested = 0;
-
-    for (const dailyPrice of dailyPrices) {
-      const priceDate = new Date(dailyPrice.timestamp || dailyPrice.date).toISOString().split('T')[0];
-
-      // Check if investment happens on this date
-      if (investmentDates.has(priceDate)) {
-        runningUnits += amount / dailyPrice.value;
-        runningInvested += amount;
+      // Fetch prices based on frequency
+      if (frequency.toLowerCase() === "hourly") {
+        rows = await fetchHourlyPrices(symbol, fromDate, toDate);
+      } else if (frequency.toLowerCase() === "daily") {
+        rows = await fetchDailyPrices(symbol, fromDate, toDate);
+      } else if (frequency.toLowerCase() === "weekly") {
+        if (!dayOfWeek) {
+          return res
+            .status(400)
+            .json({ error: "dayOfWeek is required for weekly frequency" });
+        }
+        rows = await fetchWeeklyPrices(symbol, fromDate, toDate, dayOfWeek);
+      } else if (frequency.toLowerCase() === "monthly") {
+        rows = await fetchMonthlyPrices(symbol, fromDate, toDate);
+      } else {
+        return res.status(400).json({ error: "Invalid frequency" });
       }
 
-      chartData.push({
-        timestamp: dailyPrice.timestamp || dailyPrice.date,
-        price: dailyPrice.value,
-        totalUnits: runningUnits,
-        investedValue: runningInvested,
-        portfolioValue: runningUnits * dailyPrice.value
+      if (!rows.length) {
+        return res.status(404).json({ error: "No data found for given query" });
+      }
+
+      // SIP Variables
+      let noOfInvestments;
+      let totalInvested;
+      let todayPrice;
+      let accumulatedUnits = 0;
+      let ValueOfAccumulatedUnits;
+      let averagePrice = 0;
+
+      // Chart Variables
+      let chartData = [];
+
+      if (frequency.toLowerCase() === "hourly") {
+        const dailySnapshots = {};
+        for (const row of rows) {
+          accumulatedUnits += amount / row.price_usd;
+
+          // Chart Calculations
+          const dateKey = row.price_date_time.toISOString().split("T")[0];
+          if (!dailySnapshots[dateKey]) {
+            dailySnapshots[dateKey] = {
+              lastPrice: 0,
+              investedOnThisDay: 0,
+              unitsOnThisDay: 0,
+            };
+          }
+          dailySnapshots[dateKey].lastPrice = row.price_usd;
+          dailySnapshots[dateKey].investedOnThisDay += parseFloat(amount);
+          dailySnapshots[dateKey].unitsOnThisDay += amount / row.price_usd;
+        }
+        let runningInvested = 0;
+        let runningUnits = 0;
+        const sortedDates = Object.keys(dailySnapshots).sort();
+
+        for (const date of sortedDates) {
+          const snapshot = dailySnapshots[date];
+          runningInvested += snapshot.investedOnThisDay;
+          runningUnits += snapshot.unitsOnThisDay;
+
+          chartData.push({
+            timestamp: date,
+            price: snapshot.lastPrice,
+            investedValue: runningInvested,
+            portfolioValue: runningUnits * snapshot.lastPrice,
+            totalUnits: runningUnits,
+          });
+        }
+      } else if (
+        frequency.toLowerCase() === "weekly" ||
+        frequency.toLowerCase() === "monthly"
+      ) {
+        // Weekly/Monthly: Invest on specific days, but show daily chart
+        const dailyPrices = await fetchDailyPrices(symbol, fromDate, toDate);
+
+        // Create a set of investment dates for quick lookup
+        const investmentDates = new Set();
+        for (const row of rows) {
+          const investDate = row.price_date.toISOString().split("T")[0];
+          investmentDates.add(investDate);
+        }
+
+        // Generate chart data with daily prices
+        let runningUnits = 0;
+        let runningInvested = 0;
+
+        for (const dailyPrice of dailyPrices) {
+          const priceDate = dailyPrice.price_date.toISOString().split("T")[0];
+
+          // Check if investment happens on this date
+          if (investmentDates.has(priceDate)) {
+            runningUnits += amount / parseFloat(dailyPrice.price_usd);
+            runningInvested += parseFloat(amount);
+            accumulatedUnits += amount / parseFloat(dailyPrice.price_usd);
+          }
+
+          chartData.push({
+            timestamp: priceDate,
+            price: parseFloat(dailyPrice.price_usd),
+            investedValue: runningInvested,
+            portfolioValue: runningUnits * parseFloat(dailyPrice.price_usd),
+            totalUnits: runningUnits,
+          });
+        }
+      } else {
+        // Daily
+        for (const row of rows) {
+          accumulatedUnits += amount / row.price_usd;
+          chartData.push({
+            timestamp: row.price_date,
+            price: row.price_usd,
+            investedValue: (rows.indexOf(row) + 1) * amount,
+            portfolioValue: accumulatedUnits * row.price_usd,
+            totalUnits: accumulatedUnits,
+          });
+        }
+      }
+
+      // Get today Price
+      todayPrice = await fetchCurrentPrice(symbol);
+
+      noOfInvestments = rows.length;
+      totalInvested = noOfInvestments * amount;
+      averagePrice = totalInvested / accumulatedUnits;
+      ValueOfAccumulatedUnits = accumulatedUnits * todayPrice;
+
+      res.status(200).json({
+        cryptocurrency,
+        frequency,
+        // rows,
+        noOfInvestments,
+        totalInvested,
+        todayPrice,
+        accumulatedUnits,
+        averagePrice,
+        ValueOfAccumulatedUnits,
+        chartData,
       });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message, sql: err.sql || null });
     }
-
-    const investedValue = rows.length * amount;
-    const avgPrice = totalValue / rows.length;
-
-    let currentPriceQuery = `SELECT value FROM current_prices WHERE symbol=?`;
-    const [currentPriceRows] = await pool.execute(currentPriceQuery, [symbol]);
-    const currentValue = totalUnits * currentPriceRows[0].value;
-
-    res.status(200).json({
-      cryptocurrency,
-      frequency,
-      rows,
-      dataPoints: rows.length,
-      totalUnits,
-      avgPrice,
-      investedValue,
-      currentValue,
-      chartData,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message, sql: err.sql || null });
+  } else if (method.toLowerCase() === "lumpsum") {
+    console.log("Coming soon");
+    return { message: "coming soon" };
   }
 }

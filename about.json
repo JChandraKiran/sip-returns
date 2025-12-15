@@ -1,0 +1,47 @@
+{
+  "What is this": "This is a brief about the tech used in this project",
+  "contains": {
+    "frontend": {
+      "dependencies": {
+        "axios": "^1.13.2",
+        "echarts": "^6.0.0",
+        "echarts-for-react": "^3.0.5",
+        "react": "^19.1.1",
+        "react-dom": "^19.1.1",
+        "react-range-slider-input": "^3.2.1"
+      },
+      "devDependencies": {
+        "@eslint/js": "^9.36.0",
+        "@types/react": "^19.1.16",
+        "@types/react-dom": "^19.1.9",
+        "@vitejs/plugin-react": "^5.0.4",
+        "eslint": "^9.36.0",
+        "eslint-plugin-react-hooks": "^5.2.0",
+        "eslint-plugin-react-refresh": "^0.4.22",
+        "globals": "^16.4.0",
+        "vite": "^7.1.7"
+      }
+    },
+    "backend": {
+      "dependencies": {
+        "axios": "^1.13.2",
+        "dotenv": "^17.2.3",
+        "mysql2": "^3.15.3",
+        "node-cron": "^4.2.1",
+        "sqlite3": "^5.1.7"
+      },
+      "type": "module",
+      "name": "backend"
+    },
+    "database": {
+      "db": "mysql",
+      "credentials": {
+        "DB_HOST": "localhost",
+        "DB_USER": "root",
+        "DB_PASS": "FRACAS@22",
+        "DB_NAME": "prices"
+      }
+    }
+  },
+  "what else I have": ["Alchemy API key"]
+}

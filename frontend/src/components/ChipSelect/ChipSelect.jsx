@@ -9,15 +9,17 @@ export default function ChipSelect({ chips, selectedChip, onChange }) {
               key={index}
               onClick={() => onChange(chip)}
               style={{
-                border: "2px solid #fa6400",
-                borderRadius: "15px",
+                border: isSelected
+                  ? "2px solid #fa6400"
+                  : "2px solid #fcac76ff",
+                borderRadius: "5px",
                 padding: "1px 10px",
                 gap: "3px",
                 cursor: "pointer",
                 backgroundColor: isSelected ? "#fa6400" : "transparent",
-                color: isSelected ? "white" : "black",
+                color: isSelected ? "white" : "#666",
                 fontWeight: "400",
-                // fontSize: "14px",
+                fontSize: "14px",
               }}
             >
               {chip}

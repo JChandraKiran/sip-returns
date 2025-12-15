@@ -15,7 +15,6 @@ import {
   decimalFormat,
 } from "../utils/helper";
 
-// import DateRangeSlider from "../components/DateRangeSlider";
 import DateRangeSlider from "../components/DateRangeSlider";
 import SideHeading from "../components/Typography/SideHeading/SideHeading";
 import Card from "../components/Card/Card";
@@ -34,8 +33,18 @@ export default function Home() {
   const frequencyOptions = [
     { value: "hourly", label: "Hourly" },
     { value: "daily", label: "Daily" },
-    { value: "10 days", label: "10 Days" },
+    { value: "weekly", label: "Weekly" },
     { value: "monthly", label: "Monthly" },
+  ];
+
+  const dayOfWeekOptions = [
+    { value: "sunday", label: "Sunday" },
+    { value: "monday", label: "Monday" },
+    { value: "tuesday", label: "Tuesday" },
+    { value: "wednesday", label: "Wednesday" },
+    { value: "thursday", label: "Thursday" },
+    { value: "friday", label: "Friday" },
+    { value: "saturday", label: "Saturday" },
   ];
 
   const durationChips = ["last 6 months", "1 year", "2 years", "5 years"];
@@ -47,6 +56,7 @@ export default function Home() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState(formatDate(getYesterday()));
   const [frequency, setFrequency] = useState(frequencyOptions[0].value);
+  const [dayOfWeek, setDayOfWeek] = useState(dayOfWeekOptions[0].value);
   const [amount, setAmount] = useState("10");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -71,6 +81,7 @@ export default function Home() {
     setSelectedChip(null);
   };
   const handleFrequencyChange = (event) => setFrequency(event.target.value);
+  const handleDayOfWeekChange = (event) => setDayOfWeek(event.target.value);
   const handleAmountChange = (event) => setAmount(event.target.value);
   const onChipChange = (selectedChip) => {
     setSelectedChip(selectedChip);
@@ -86,29 +97,48 @@ export default function Home() {
     }
   };
 
-  // ✅ Updated handleSubmit
   const handleSubmit = async () => {
     setError(null);
-    setResult(null);
+    // setResult(null);
 
     if (!cryptocurrency || !method || !fromDate || !frequency || !amount) {
       setError("Please fill in all fields.");
       return;
     }
 
+    if (frequency === "weekly" && !dayOfWeek) {
+      setError("Please select a day of the week for weekly investments.");
+      return;
+    }
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setError("Amount must be a positive number.");
+      return;
+    }
+
+    if (new Date(fromDate) >= new Date(toDate)) {
+      setError("From date must be before To date.");
+      return;
+    }
     setLoading(true);
 
     try {
       // 🌐 Backend URL
       const backendURL = "/api/sip-returns";
-      const response = await axios.post(backendURL, {
+      const params = {
         cryptocurrency,
         method,
         fromDate,
         toDate,
         frequency,
         amount: parseFloat(amount),
-      });
+      };
+
+      if (frequency === "weekly") {
+        params.dayOfWeek = dayOfWeek;
+      }
+
+      const response = await axios.get(backendURL, { params });
       console.log(response.data);
       setResult(response.data);
     } catch (err) {
@@ -119,12 +149,24 @@ export default function Home() {
     }
   };
 
+  // useEffect(() => {
+  //   const getdwmq = async () => {
+  //     try {
+  //       const url = `api/dwmqReturns?token=${cryptocurrency}`;
+  //       const response = await axios.get(url);
+  //       console.log(response);
+  //     } catch (error) {
+  //       setError(error.response?.data?.error || "Something went wrong");
+  //     }
+  //   };
+  //   getdwmq();
+  // }, []);
+
   useEffect(() => {
     const getMinDates = async () => {
       try {
         const backendURL = "/api/min-dates";
         const response = await axios.get(backendURL);
-        console.log(response.data);
         setMinDates(response.data);
         localStorage.setItem("minDates", JSON.stringify(response.data));
       } catch (error) {
@@ -156,7 +198,6 @@ export default function Home() {
           gap: "10px",
           alignItems: "flex-start",
           borderRadius: "15px",
-          padding: "40px",
           width: "100%",
         }}
       >
@@ -234,12 +275,26 @@ export default function Home() {
           onChange={handleFrequencyChange}
           options={frequencyOptions}
         />
+
+        {frequency === "weekly" && (
+          <>
+            <SideHeading text={"Day of Week:"} />
+            <Select
+              id="dayOfWeek"
+              value={dayOfWeek}
+              onChange={handleDayOfWeekChange}
+              options={dayOfWeekOptions}
+            />
+          </>
+        )}
+
         <SideHeading text={"Amount in $:"} />
         <TextInput
           type="number"
           value={amount}
           onChange={handleAmountChange}
           placeholder="Enter amount"
+          aria-label="Investment amount in dollars"
         />
 
         <div>
@@ -260,6 +315,36 @@ export default function Home() {
                 <div
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
+                  <ResultHeading label="No of investments" />
+                  <span
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      color: "#555",
+                    }}
+                  >
+                    {result.noOfInvestments}
+                  </span>
+                </div>
+
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <ResultHeading label="Total Invested" />
+                  <span
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      color: "#5470c6",
+                    }}
+                  >
+                    ${decimalFormat(result.totalInvested)}
+                  </span>
+                </div>
+
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
                   <ResultHeading
                     label={`Accumulated ${result.cryptocurrency.toUpperCase()}`}
                   />
@@ -270,9 +355,10 @@ export default function Home() {
                       color: "#555",
                     }}
                   >
-                    {decimalFormat(result.totalUnits)}
+                    {decimalFormat(result.accumulatedUnits)}
                   </span>
                 </div>
+
                 <div
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
@@ -284,13 +370,14 @@ export default function Home() {
                       color: "#555",
                     }}
                   >
-                    ${decimalFormat(result.avgPrice)}
+                    ${decimalFormat(result.averagePrice)}
                   </span>
                 </div>
+
                 <div
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
-                  <ResultHeading label="No of investments" />
+                  <ResultHeading label="Last Traded Price" />
                   <span
                     style={{
                       fontSize: "16px",
@@ -298,23 +385,10 @@ export default function Home() {
                       color: "#555",
                     }}
                   >
-                    {result.dataPoints}
+                    ${decimalFormat(result.todayPrice)}
                   </span>
                 </div>
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
-                >
-                  <ResultHeading label="Invested amount" />
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "#5470c6",
-                    }}
-                  >
-                    ${decimalFormat(result.investedValue)}
-                  </span>
-                </div>
+
                 <div
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
@@ -326,9 +400,10 @@ export default function Home() {
                       color: "#555",
                     }}
                   >
-                    ${decimalFormat(result.currentValue)}
+                    ${decimalFormat(result.ValueOfAccumulatedUnits)}
                   </span>
                 </div>
+
                 <div
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
@@ -338,17 +413,20 @@ export default function Home() {
                       fontSize: "16px",
                       fontWeight: "600",
                       color:
-                        result.currentValue - result.investedValue >= 0
+                        result.ValueOfAccumulatedUnits - result.totalInvested >=
+                        0
                           ? "#4cab1fff"
                           : "#ee6666",
                     }}
                   >
                     {(
-                      ((result.currentValue - result.investedValue) * 100) /
-                      result.investedValue
+                      ((result.ValueOfAccumulatedUnits - result.totalInvested) *
+                        100) /
+                      result.totalInvested
                     ).toFixed(2)}
                     %
-                    {result.currentValue - result.investedValue >= 0 ? (
+                    {result.ValueOfAccumulatedUnits - result.totalInvested >=
+                    0 ? (
                       <ArrowUpIcon />
                     ) : (
                       <ArrowDownIcon />
@@ -359,8 +437,8 @@ export default function Home() {
             </Card>
             <Card style={{ width: "50%" }}>
               <InvestmentDonutChart
-                investedValue={result.investedValue}
-                currentValue={result.currentValue}
+                investedValue={result.totalInvested}
+                currentValue={result.ValueOfAccumulatedUnits}
               />
             </Card>
           </>

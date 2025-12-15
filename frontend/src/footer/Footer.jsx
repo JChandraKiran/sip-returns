@@ -1,5 +1,7 @@
 import React from "react";
 
 export default function Footer() {
-  return <div>This is Footer</div>;
+  return (
+    <div style={{ background: "#222", color: "white" }}>This is Footer</div>
+  );
 }

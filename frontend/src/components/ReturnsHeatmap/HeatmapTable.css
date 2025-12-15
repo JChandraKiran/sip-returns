@@ -1,0 +1,103 @@
+.heatmap-container {
+  width: 100%;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legend-color {
+  width: 200px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.heatmap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 800px;
+}
+
+.heatmap-table th,
+.heatmap-table td {
+  padding: 10px;
+  text-align: center;
+  border: 2px solid #e0e0e0;
+}
+
+.heatmap-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.year-header {
+  background: #333 !important;
+  color: white !important;
+  font-weight: 700;
+  position: sticky;
+  left: 0;
+  z-index: 20;
+}
+
+.year-cell {
+  background: #f5f5f5;
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  border-right: 2px solid #ccc;
+}
+
+.return-cell {
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-width: 70px;
+}
+
+.return-cell:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+  position: relative;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .heatmap-table {
+    font-size: 11px;
+    min-width: 600px;
+  }
+
+  .heatmap-table th,
+  .heatmap-table td {
+    padding: 6px;
+  }
+
+  .return-cell {
+    min-width: 50px;
+  }
+}
