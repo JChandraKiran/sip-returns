@@ -222,6 +222,7 @@ export default function Home() {
             flex: "1",
             maxWidth: "calc(60% - 10px)",
             boxSizing: "border-box",
+            margin: "20px",
           }}
         >
           {/* Method Selection Section */}
@@ -307,16 +308,15 @@ export default function Home() {
                 style={{
                   flex: "1",
                   display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
+                  alignItems: "center",
+                  gap: "20px",
                 }}
               >
                 <div
                   style={{
-                    fontSize: "14px",
+                    fontSize: "16px",
                     fontWeight: "500",
                     color: colors.textSecondary,
-                    marginBottom: "6px",
                     textAlign: "left",
                   }}
                 >
@@ -332,16 +332,15 @@ export default function Home() {
                 style={{
                   flex: "1",
                   display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
+                  alignItems: "center",
+                  gap: "20px",
                 }}
               >
                 <div
                   style={{
-                    fontSize: "14px",
+                    fontSize: "16px",
                     fontWeight: "500",
                     color: colors.textSecondary,
-                    marginBottom: "6px",
                     textAlign: "left",
                   }}
                 >
@@ -402,21 +401,10 @@ export default function Home() {
             style={{
               width: "100%",
               display: "flex",
-              flexDirection: "column",
               alignItems: "flex-start",
+              gap: "80px",
             }}
           >
-            <SideHeading text={"Frequency:"} style={{ textAlign: "left" }} />
-            <Select
-              id="frequency"
-              value={frequency}
-              onChange={handleFrequencyChange}
-              options={frequencyOptions}
-            />
-          </div>
-
-          {/* Day of Week Section (conditional) */}
-          {frequency === "weekly" && (
             <div
               style={{
                 width: "100%",
@@ -425,18 +413,42 @@ export default function Home() {
                 alignItems: "flex-start",
               }}
             >
-              <SideHeading
-                text={"Day of Week:"}
-                style={{ textAlign: "left" }}
-              />
+              <SideHeading text={"Frequency:"} style={{ textAlign: "left" }} />
               <Select
-                id="dayOfWeek"
-                value={dayOfWeek}
-                onChange={handleDayOfWeekChange}
-                options={dayOfWeekOptions}
+                id="frequency"
+                value={frequency}
+                onChange={handleFrequencyChange}
+                options={frequencyOptions}
+                style={{ width: "100%" }}
               />
             </div>
-          )}
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+              }}
+            >
+              {frequency === "weekly" && (
+                <>
+                  <SideHeading
+                    text={"Day of Week:"}
+                    style={{ textAlign: "left" }}
+                  />
+                  <Select
+                    id="dayOfWeek"
+                    value={dayOfWeek}
+                    onChange={handleDayOfWeekChange}
+                    options={dayOfWeekOptions}
+                    style={{ width: "100%" }}
+                  />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Day of Week Section (conditional) */}
 
           {/* Amount Section */}
           <div
