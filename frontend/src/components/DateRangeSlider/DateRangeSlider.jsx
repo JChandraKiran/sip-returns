@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import RangeSliderInput from "react-range-slider-input";
 import "react-range-slider-input/dist/style.css";
+import "./DateRangeSlider.css";
 
 export default function DateRangeSlider({
   minDate,
@@ -24,8 +25,8 @@ export default function DateRangeSlider({
     const d = new Date(start);
     d.setDate(d.getDate() + index);
     const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 

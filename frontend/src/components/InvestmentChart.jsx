@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import * as echarts from "echarts";
+import { colors } from "../utils/colors";
 
 function InvestmentChart({ chartData, cryptocurrency }) {
   const chartRef = useRef(null);
@@ -32,6 +33,11 @@ function InvestmentChart({ chartData, cryptocurrency }) {
       title: {
         text: `${cryptocurrency.toUpperCase()} Investment`,
         left: "center",
+        textStyle: {
+          color: colors.textPrimary,
+          fontSize: 20,
+          fontWeight: "700",
+        },
       },
       tooltip: {
         trigger: "axis",
@@ -124,7 +130,7 @@ function InvestmentChart({ chartData, cryptocurrency }) {
             width: 2,
           },
           itemStyle: {
-            color: "#5470c6",
+            color: "#9c27b0",
           },
         },
         {
@@ -137,7 +143,7 @@ function InvestmentChart({ chartData, cryptocurrency }) {
             width: 2,
           },
           itemStyle: {
-            color: "#91cc75",
+            color: colors.info,
           },
         },
         {
@@ -150,7 +156,7 @@ function InvestmentChart({ chartData, cryptocurrency }) {
             width: 3,
           },
           itemStyle: {
-            color: "#fac858",
+            color: colors.primary,
           },
         },
         {
@@ -164,7 +170,7 @@ function InvestmentChart({ chartData, cryptocurrency }) {
             width: 2,
           },
           itemStyle: {
-            color: "#ee6666",
+            color: colors.success,
           },
         },
       ],
@@ -196,12 +202,11 @@ function InvestmentChart({ chartData, cryptocurrency }) {
       style={{
         width: "100%",
         height: "600px",
-        marginTop: "20px",
-        borderRadius: "20px",
-        border: "4px solid #F9812D",
-        // boxShadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
-        // boxShadow:
-        //   "rgba(179, 137, 22, 0.33) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px",
+        borderRadius: "15px",
+        border: `3px solid ${colors.primary}`,
+        backgroundColor: colors.bgWhite,
+        padding: "10px",
+        boxSizing: "border-box",
       }}
     />
   );

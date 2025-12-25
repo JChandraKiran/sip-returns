@@ -1,0 +1,49 @@
+/* DateRangeSlider - Bitcoin Theme Styling */
+
+.date-range-slider.range-slider {
+  height: 8px;
+  background: var(--color-gray-200, #e8e8e8);
+  border-radius: 4px;
+}
+
+/* Range fill (selected area between thumbs) */
+.date-range-slider .range-slider__range {
+  background: var(--color-primary-light, #ffa940);
+  height: 100%;
+}
+
+/* Thumb handles */
+.date-range-slider .range-slider__thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--color-primary, #f7931a);
+  border: 3px solid var(--color-bg-white, #ffffff);
+  box-shadow: var(--shadow-sm, rgba(0, 0, 0, 0.02) 0 1px 3px 0);
+}
+
+/* Thumb hover state */
+.date-range-slider .range-slider__thumb:hover {
+  background: var(--color-primary-hover, #ff9f2e);
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 0 0 8px rgba(247, 147, 26, 0.1);
+}
+
+/* Thumb focus state */
+.date-range-slider .range-slider__thumb:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 8px rgba(247, 147, 26, 0.2);
+}
+
+/* Disabled state */
+.date-range-slider[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.date-range-slider[data-disabled] .range-slider__thumb {
+  background: var(--color-gray-400, #bfbfbf);
+}
+
+.date-range-slider[data-disabled] .range-slider__range {
+  background: var(--color-gray-300, #d9d9d9);
+}

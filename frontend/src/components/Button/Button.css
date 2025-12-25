@@ -3,12 +3,12 @@
 .button-primary {
   align-items: center;
   background-clip: padding-box;
-  background-color: #fa6400;
+  background-color: var(--color-primary);
   border: 1px solid transparent;
-  border-radius: 0.25rem;
-  box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-sm);
   box-sizing: border-box;
-  color: #fff;
+  color: var(--color-text-light);
   cursor: pointer;
   display: inline-flex;
   font-family: system-ui, -apple-system, "Helvetica Neue", Helvetica, Arial,
@@ -32,8 +32,8 @@
 
 .button-primary:hover,
 .button-primary:focus {
-  background-color: #fb8332;
-  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+  background-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-lg);
 }
 
 .button-primary:hover {
@@ -41,7 +41,14 @@
 }
 
 .button-primary:active {
-  background-color: #c85000;
-  box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
+  background-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-sm);
   transform: translateY(0);
+}
+
+.button-primary:disabled {
+  background-color: var(--color-gray-300);
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
 }

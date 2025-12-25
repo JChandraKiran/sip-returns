@@ -15,13 +15,14 @@ import {
   decimalFormat,
 } from "../utils/helper";
 
-import DateRangeSlider from "../components/DateRangeSlider";
+import DateRangeSlider from "../components/DateRangeSlider/DateRangeSlider";
 import SideHeading from "../components/Typography/SideHeading/SideHeading";
 import Card from "../components/Card/Card";
 import ResultHeading from "../components/Typography/ResultHeading/ResultHeading";
 
 import ArrowDownIcon from "../components/Icons/ArrowDownIcon";
 import ArrowUpIcon from "../components/Icons/ArrowUpIcon";
+import { colors } from "../utils/colors";
 
 export default function Home() {
   const cryptocurrencyOptions = [
@@ -31,8 +32,8 @@ export default function Home() {
     { value: "sol", label: "Solana" },
   ];
   const frequencyOptions = [
-    { value: "hourly", label: "Hourly" },
     { value: "daily", label: "Daily" },
+    { value: "hourly", label: "Hourly" },
     { value: "weekly", label: "Weekly" },
     { value: "monthly", label: "Monthly" },
   ];
@@ -53,7 +54,7 @@ export default function Home() {
     cryptocurrencyOptions[0].value
   );
   const [method, setMethod] = useState("dca");
-  const [fromDate, setFromDate] = useState("");
+  const [fromDate, setFromDate] = useState(formatDate(getMonthsAgo(6)));
   const [toDate, setToDate] = useState(formatDate(getYesterday()));
   const [frequency, setFrequency] = useState(frequencyOptions[0].value);
   const [dayOfWeek, setDayOfWeek] = useState(dayOfWeekOptions[0].value);
@@ -61,7 +62,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedChip, setSelectedChip] = useState(null);
+  const [selectedChip, setSelectedChip] = useState("last 6 months");
   const [minDates, setMinDates] = useState(() => {
     const stored = localStorage.getItem("minDates");
     return stored ? JSON.parse(stored) : null;
@@ -180,6 +181,12 @@ export default function Home() {
     }
   }, []);
 
+  // Auto-calculate on initial page load
+  useEffect(() => {
+    // Only run on initial mount
+    handleSubmit();
+  }, []);
+
   return (
     <div
       style={{
@@ -188,270 +195,520 @@ export default function Home() {
         justifyContent: "center",
         alignItems: "center",
         gap: "20px",
-        padding: "20px",
+        padding: "20px 10px",
+        minHeight: "100vh",
+        overflow: "hidden",
       }}
     >
-      <Card
+      {/* Main Content Container: Form on Left, Results on Right */}
+      <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          alignItems: "flex-start",
-          borderRadius: "15px",
           width: "100%",
+          maxWidth: "1200px",
+          gap: "20px",
+          alignItems: "flex-start",
+          boxSizing: "border-box",
         }}
       >
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Button
-            onClick={handleDCAClick}
-            className="primary"
-            style={{ background: method !== "dca" && "gray" }}
-          >
-            DCA
-          </Button>
-          <Button
-            onClick={handleLumpsumClick}
-            className="primary"
-            style={{ background: method !== "lumpsum" && "gray" }}
-          >
-            Lumpsum
-          </Button>
-        </div>
-
-        <SideHeading text={"Cryptocurrency:"} />
-        <Select
-          id="Cryptocurrency"
-          value={cryptocurrency}
-          onChange={handleCryptocurrencyChange}
-          options={cryptocurrencyOptions}
-        />
-
-        <SideHeading text={"Duration:"} />
-        <div>From:</div>
-        <DateInput
-          id="from-date"
-          value={fromDate}
-          onChange={handleFromDateChange}
-        />
-        <div>To:</div>
-        <DateInput id="to-date" value={toDate} onChange={handleToDateChange} />
-        {minDates && minDates[cryptocurrency.toUpperCase()] && (
-          <div
-            style={{
-              display: "flex",
-              width: "100%",
-              justifyContent: "center",
-            }}
-          >
-            <div style={{ width: "70%" }}>
-              <DateRangeSlider
-                minDate={minDates[cryptocurrency.toUpperCase()].split("T")[0]}
-                maxDate={formatDate(getYesterday())}
-                onChange={(f, t) => {
-                  setFromDate(f);
-                  setToDate(t);
-                  setSelectedChip(null);
+        {/* Left Side - Form */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "24px",
+            alignItems: "flex-start",
+            borderRadius: "15px",
+            flex: "1",
+            maxWidth: "calc(60% - 10px)",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Method Selection Section */}
+          <div style={{ width: "100%" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Button
+                onClick={handleDCAClick}
+                className="primary"
+                style={{
+                  background:
+                    method === "dca" ? colors.primary : colors.bgWhite,
+                  color:
+                    method === "dca" ? colors.textLight : colors.textSecondary,
+                  border: `2px solid ${
+                    method === "dca" ? colors.primary : colors.gray300
+                  }`,
+                  fontWeight: method === "dca" ? "600" : "500",
                 }}
-                fromDate={fromDate}
-                toDate={toDate}
-              />
+              >
+                DCA
+              </Button>
+              <Button
+                onClick={handleLumpsumClick}
+                className="primary"
+                style={{
+                  background:
+                    method === "lumpsum" ? colors.primary : colors.bgWhite,
+                  color:
+                    method === "lumpsum"
+                      ? colors.textLight
+                      : colors.textSecondary,
+                  border: `2px solid ${
+                    method === "lumpsum" ? colors.primary : colors.gray300
+                  }`,
+                  fontWeight: method === "lumpsum" ? "600" : "500",
+                }}
+              >
+                Lumpsum
+              </Button>
             </div>
           </div>
-        )}
-        <div
-          style={{ width: "100%", display: "flex", justifyContent: "center" }}
-        >
-          <ChipSelect
-            chips={durationChips}
-            selectedChip={selectedChip}
-            onChange={onChipChange}
-          />
-        </div>
 
-        <SideHeading text={"Frequency:"} />
-        <Select
-          id="frequency"
-          value={frequency}
-          onChange={handleFrequencyChange}
-          options={frequencyOptions}
-        />
-
-        {frequency === "weekly" && (
-          <>
-            <SideHeading text={"Day of Week:"} />
-            <Select
-              id="dayOfWeek"
-              value={dayOfWeek}
-              onChange={handleDayOfWeekChange}
-              options={dayOfWeekOptions}
+          {/* Cryptocurrency Section */}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            }}
+          >
+            <SideHeading
+              text={"Cryptocurrency:"}
+              style={{ textAlign: "left" }}
             />
-          </>
-        )}
+            <Select
+              id="Cryptocurrency"
+              value={cryptocurrency}
+              onChange={handleCryptocurrencyChange}
+              options={cryptocurrencyOptions}
+            />
+          </div>
 
-        <SideHeading text={"Amount in $:"} />
-        <TextInput
-          type="number"
-          value={amount}
-          onChange={handleAmountChange}
-          placeholder="Enter amount"
-          aria-label="Investment amount in dollars"
-        />
-
-        <div>
-          <Button onClick={handleSubmit} className="primary" disabled={loading}>
-            {loading ? "Calculating..." : "Calculate"}
-          </Button>
-        </div>
-
-        {error && <p style={{ color: "red" }}>{error}</p>}
-      </Card>
-      <div style={{ display: "flex", width: "100%", gap: "20px" }}>
-        {result && (
-          <>
-            <Card style={{ width: "50%" }}>
+          {/* Duration Section */}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            }}
+          >
+            <SideHeading text={"Duration:"} style={{ textAlign: "left" }} />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                gap: "12px",
+                width: "100%",
+              }}
+            >
               <div
-                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                style={{
+                  flex: "1",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                }}
               >
                 <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: colors.textSecondary,
+                    marginBottom: "6px",
+                    textAlign: "left",
+                  }}
                 >
-                  <ResultHeading label="No of investments" />
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "#555",
-                    }}
-                  >
-                    {result.noOfInvestments}
-                  </span>
+                  From:
                 </div>
-
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
-                >
-                  <ResultHeading label="Total Invested" />
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "#5470c6",
-                    }}
-                  >
-                    ${decimalFormat(result.totalInvested)}
-                  </span>
-                </div>
-
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
-                >
-                  <ResultHeading
-                    label={`Accumulated ${result.cryptocurrency.toUpperCase()}`}
-                  />
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "#555",
-                    }}
-                  >
-                    {decimalFormat(result.accumulatedUnits)}
-                  </span>
-                </div>
-
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
-                >
-                  <ResultHeading label="Average Price" />
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "#555",
-                    }}
-                  >
-                    ${decimalFormat(result.averagePrice)}
-                  </span>
-                </div>
-
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
-                >
-                  <ResultHeading label="Last Traded Price" />
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "#555",
-                    }}
-                  >
-                    ${decimalFormat(result.todayPrice)}
-                  </span>
-                </div>
-
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
-                >
-                  <ResultHeading label="Current Value" />
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "#555",
-                    }}
-                  >
-                    ${decimalFormat(result.ValueOfAccumulatedUnits)}
-                  </span>
-                </div>
-
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
-                >
-                  <ResultHeading label="Returns" />
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color:
-                        result.ValueOfAccumulatedUnits - result.totalInvested >=
-                        0
-                          ? "#4cab1fff"
-                          : "#ee6666",
-                    }}
-                  >
-                    {(
-                      ((result.ValueOfAccumulatedUnits - result.totalInvested) *
-                        100) /
-                      result.totalInvested
-                    ).toFixed(2)}
-                    %
-                    {result.ValueOfAccumulatedUnits - result.totalInvested >=
-                    0 ? (
-                      <ArrowUpIcon />
-                    ) : (
-                      <ArrowDownIcon />
-                    )}
-                  </span>
-                </div>
+                <DateInput
+                  id="from-date"
+                  value={fromDate}
+                  onChange={handleFromDateChange}
+                />
               </div>
-            </Card>
-            <Card style={{ width: "50%" }}>
+              <div
+                style={{
+                  flex: "1",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: colors.textSecondary,
+                    marginBottom: "6px",
+                    textAlign: "left",
+                  }}
+                >
+                  To:
+                </div>
+                <DateInput
+                  id="to-date"
+                  value={toDate}
+                  onChange={handleToDateChange}
+                />
+              </div>
+            </div>
+          </div>
+          {/* Date Range Slider */}
+          {minDates && minDates[cryptocurrency.toUpperCase()] && (
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                justifyContent: "center",
+                marginTop: "8px",
+              }}
+            >
+              <div style={{ width: "70%" }}>
+                <DateRangeSlider
+                  minDate={minDates[cryptocurrency.toUpperCase()].split("T")[0]}
+                  maxDate={formatDate(getYesterday())}
+                  onChange={(f, t) => {
+                    setFromDate(f);
+                    setToDate(t);
+                    setSelectedChip(null);
+                  }}
+                  fromDate={fromDate}
+                  toDate={toDate}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Duration Chips */}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              marginTop: "-8px",
+            }}
+          >
+            <ChipSelect
+              chips={durationChips}
+              selectedChip={selectedChip}
+              onChange={onChipChange}
+            />
+          </div>
+
+          {/* Frequency Section */}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            }}
+          >
+            <SideHeading text={"Frequency:"} style={{ textAlign: "left" }} />
+            <Select
+              id="frequency"
+              value={frequency}
+              onChange={handleFrequencyChange}
+              options={frequencyOptions}
+            />
+          </div>
+
+          {/* Day of Week Section (conditional) */}
+          {frequency === "weekly" && (
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+              }}
+            >
+              <SideHeading
+                text={"Day of Week:"}
+                style={{ textAlign: "left" }}
+              />
+              <Select
+                id="dayOfWeek"
+                value={dayOfWeek}
+                onChange={handleDayOfWeekChange}
+                options={dayOfWeekOptions}
+              />
+            </div>
+          )}
+
+          {/* Amount Section */}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            }}
+          >
+            <SideHeading text={"Amount in $:"} style={{ textAlign: "left" }} />
+            <TextInput
+              type="number"
+              value={amount}
+              onChange={handleAmountChange}
+              placeholder="Enter amount"
+              aria-label="Investment amount in dollars"
+            />
+          </div>
+
+          {/* Calculate Button */}
+          <div style={{ width: "100%", marginTop: "8px" }}>
+            <Button
+              onClick={handleSubmit}
+              className="primary"
+              disabled={loading}
+              style={{ width: "100%" }}
+            >
+              {loading ? "Calculating..." : "Calculate"}
+            </Button>
+          </div>
+
+          {error && (
+            <p
+              style={{
+                color: colors.danger,
+                backgroundColor: colors.dangerLight + "20",
+                padding: "10px",
+                borderRadius: "8px",
+                margin: "10px 0 0 0",
+              }}
+            >
+              {error}
+            </p>
+          )}
+        </div>
+
+        {/* Right Side - Results and Donut (Stacked Vertically) */}
+        <div
+          style={{
+            flex: "1",
+            maxWidth: "calc(40% - 10px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* Results Card */}
+          <Card style={{ width: "100%", boxSizing: "border-box" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "3px" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <ResultHeading label="No of investments" />
+                <span
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {loading ? "..." : result?.noOfInvestments || "-"}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <ResultHeading label="Total Invested" />
+                <span
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    color: colors.info,
+                  }}
+                >
+                  {loading
+                    ? "..."
+                    : result
+                    ? `$${decimalFormat(result.totalInvested)}`
+                    : "-"}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <ResultHeading
+                  label={`Accumulated ${
+                    result?.cryptocurrency?.toUpperCase() || "Crypto"
+                  }`}
+                />
+                <span
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {loading
+                    ? "..."
+                    : result
+                    ? decimalFormat(result.accumulatedUnits)
+                    : "-"}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <ResultHeading label="Average Price" />
+                <span
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {loading
+                    ? "..."
+                    : result
+                    ? `$${decimalFormat(result.averagePrice)}`
+                    : "-"}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <ResultHeading label="Last Traded Price" />
+                <span
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    color: colors.primary,
+                  }}
+                >
+                  {loading
+                    ? "..."
+                    : result
+                    ? `$${decimalFormat(result.todayPrice)}`
+                    : "-"}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <ResultHeading label="Current Value" />
+                <span
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {loading
+                    ? "..."
+                    : result
+                    ? `$${decimalFormat(result.ValueOfAccumulatedUnits)}`
+                    : "-"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  // backgroundColor: colors.primarySubtle,
+                  padding: "14px 16px",
+                  borderRadius: "8px",
+                  marginTop: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "600",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  Returns
+                </div>
+                <span
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "700",
+                    color: loading
+                      ? colors.textSecondary
+                      : result
+                      ? result.ValueOfAccumulatedUnits - result.totalInvested >=
+                        0
+                        ? colors.success
+                        : colors.danger
+                      : colors.textSecondary,
+                  }}
+                >
+                  {loading ? (
+                    "..."
+                  ) : result ? (
+                    <>
+                      {(
+                        ((result.ValueOfAccumulatedUnits -
+                          result.totalInvested) *
+                          100) /
+                        result.totalInvested
+                      ).toFixed(2)}
+                      %
+                      {result.ValueOfAccumulatedUnits - result.totalInvested >=
+                      0 ? (
+                        <ArrowUpIcon />
+                      ) : (
+                        <ArrowDownIcon />
+                      )}
+                    </>
+                  ) : (
+                    "-"
+                  )}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Donut Chart Card */}
+          <Card style={{ width: "100%", boxSizing: "border-box" }}>
+            {loading ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "350px",
+                  color: colors.textSecondary,
+                  fontSize: "16px",
+                }}
+              >
+                Loading chart...
+              </div>
+            ) : result ? (
               <InvestmentDonutChart
                 investedValue={result.totalInvested}
                 currentValue={result.ValueOfAccumulatedUnits}
               />
-            </Card>
-          </>
-        )}
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "350px",
+                  color: colors.textSecondary,
+                  fontSize: "16px",
+                }}
+              >
+                No data available
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
-      <div style={{ width: "100%" }}>
-        {result?.chartData && result.chartData.length > 0 && (
+
+      {/* Line Chart - Full Width Below */}
+      {result && result.chartData && result.chartData.length > 0 && (
+        <div style={{ width: "100%", maxWidth: "1200px" }}>
           <InvestmentChart
             chartData={result.chartData}
             cryptocurrency={result.cryptocurrency}
           />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

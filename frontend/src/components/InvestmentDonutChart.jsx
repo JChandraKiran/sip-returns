@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import * as echarts from "echarts";
+import { colors } from "../utils/colors";
 
 function InvestmentDonutChart({ investedValue, currentValue }) {
   const chartRef = useRef(null);
@@ -58,12 +59,12 @@ function InvestmentDonutChart({ investedValue, currentValue }) {
             {
               value: investedValue,
               name: "Invested",
-              itemStyle: { color: "#5470c6" },
+              itemStyle: { color: colors.info },
             },
             {
               value: absProfit,
               name: isProfit ? "Profit" : "Loss",
-              itemStyle: { color: isProfit ? "#91cc75" : "#ee6666" },
+              itemStyle: { color: isProfit ? colors.success : colors.danger },
             },
           ],
         },
