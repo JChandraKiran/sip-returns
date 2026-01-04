@@ -26,15 +26,15 @@ export default async function handler(req, res) {
     amount,
     dayOfWeek,
   } = req.query;
-  if (
-    !cryptocurrency ||
-    !method ||
-    !fromDate ||
-    !toDate ||
-    !frequency ||
-    !amount
-  ) {
+
+  // Validate common required fields
+  if (!cryptocurrency || !method || !fromDate || !amount) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Validate method-specific fields
+  if (method.toLowerCase() === "dca" && (!toDate || !frequency)) {
+    return res.status(400).json({ error: "toDate and frequency are required for DCA method" });
   }
   if (method.toLowerCase() === "dca") {
     try {
@@ -184,7 +184,61 @@ export default async function handler(req, res) {
       res.status(500).json({ error: err.message, sql: err.sql || null });
     }
   } else if (method.toLowerCase() === "lumpsum") {
-    console.log("Coming soon");
-    return { message: "coming soon" };
+    try {
+      const symbol = cryptocurrency.toUpperCase();
+
+      // Fetch price at investment date
+      const investmentDatePrices = await fetchDailyPrices(symbol, fromDate, fromDate);
+
+      if (!investmentDatePrices.length) {
+        return res.status(404).json({
+          error: "No price data found for the investment date. Please select a different date."
+        });
+      }
+
+      const investmentPrice = parseFloat(investmentDatePrices[0].price_usd);
+      const unitsPurchased = parseFloat(amount) / investmentPrice;
+
+      // Get current price
+      const currentPrice = await fetchCurrentPrice(symbol);
+
+      // Calculate returns
+      const currentValue = unitsPurchased * currentPrice;
+      const absoluteReturns = currentValue - parseFloat(amount);
+      const percentageReturns = ((currentValue - parseFloat(amount)) / parseFloat(amount)) * 100;
+
+      // Fetch daily prices from investment date to today for chart
+      const today = new Date();
+      today.setDate(today.getDate() - 1); // Yesterday
+      const toDate = today.toISOString().split('T')[0];
+
+      const dailyPrices = await fetchDailyPrices(symbol, fromDate, toDate);
+
+      // Generate chart data
+      const chartData = dailyPrices.map(row => ({
+        timestamp: row.price_date,
+        price: parseFloat(row.price_usd),
+        portfolioValue: unitsPurchased * parseFloat(row.price_usd),
+        totalUnits: unitsPurchased,
+        investedValue: parseFloat(amount)
+      }));
+
+      res.status(200).json({
+        cryptocurrency,
+        method,
+        investmentDate: fromDate,
+        investmentAmount: parseFloat(amount),
+        investmentPrice,
+        unitsPurchased,
+        currentPrice,
+        currentValue,
+        absoluteReturns,
+        percentageReturns,
+        chartData,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message, sql: err.sql || null });
+    }
   }
 }
