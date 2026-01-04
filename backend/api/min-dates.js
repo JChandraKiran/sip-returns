@@ -24,13 +24,13 @@ export default async function handler(req, res) {
     ORDER BY symbol
   `;
 
-    const [rows] = await pool.execute(query);
-    if (!rows.length) {
+    const result = await pool.query(query);
+    if (!result.rows.length) {
       return res.status(404).json({ error: "No data found for given query" });
     }
 
     // Transform array to object: { btc: '2019-11-01', eth: '2020-01-15', ... }
-    const minDatesObject = rows.reduce((acc, row) => {
+    const minDatesObject = result.rows.reduce((acc, row) => {
       acc[row.symbol] = row.min_date;
       return acc;
     }, {});

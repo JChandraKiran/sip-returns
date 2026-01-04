@@ -1,16 +1,21 @@
 // fetch_and_store_prices.js
-import mysql from "mysql2/promise";
+import pkg from 'pg';
+const { Client } = pkg;
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // 🔑 Alchemy API Key
-const ALCHEMY_API_KEY = "21QGlZ9620ld2erifQ0M5g5Ewuho6XJ6"; // Replace this
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "21QGlZ9620ld2erifQ0M5g5Ewuho6XJ6";
 const API_URL = `https://api.g.alchemy.com/prices/v1/${ALCHEMY_API_KEY}/tokens/historical`;
 
-// 🧩 MySQL Connection Config
+// 🧩 PostgreSQL Connection Config
 const dbConfig = {
-  host: "localhost",
-  user: "root",
-  password: "FRACAS@22",
-  database: "prices",
+  host: process.env.PG_HOST || "localhost",
+  user: process.env.PG_USER || "dcauser",
+  password: process.env.PG_PASS || "kiran@0205",
+  database: process.env.PG_NAME || "dca",
+  port: process.env.PG_PORT || 5432,
 };
 
 // 📊 Token and interval
@@ -38,35 +43,33 @@ function toISOStringNoMs(date) {
   return date.toISOString().split(".")[0] + "Z";
 }
 
-// 🗄️ Ensure MySQL table exists
+// 🗄️ Ensure PostgreSQL table exists
 async function ensureTableExists(connection) {
   const createTableQuery = `
     CREATE TABLE IF NOT EXISTS prices (
-      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       symbol VARCHAR(20),
-      value DOUBLE,
-      timestamp DATETIME,
-      UNIQUE KEY unique_symbol_timestamp (symbol, timestamp)
+      value DOUBLE PRECISION,
+      timestamp TIMESTAMP,
+      UNIQUE (symbol, timestamp)
     )
   `;
-  await connection.execute(createTableQuery);
+  await connection.query(createTableQuery);
 }
 
-// 💾 Insert a batch of rows into MySQL
+// 💾 Insert a batch of rows into PostgreSQL
 async function insertPrices(connection, data, symbol) {
   const insertQuery = `
-    INSERT IGNORE INTO prices (symbol, value, timestamp)
-    VALUES (?, ?, ?)
+    INSERT INTO prices (symbol, value, timestamp)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (symbol, timestamp) DO NOTHING
   `;
 
   for (const entry of data) {
     // Round to 5 decimal places
     const value = parseFloat(parseFloat(entry.value).toFixed(5));
-    const timestamp = new Date(entry.timestamp)
-      .toISOString()
-      .slice(0, 19)
-      .replace("T", " ");
-    await connection.execute(insertQuery, [symbol, value, timestamp]);
+    const timestamp = new Date(entry.timestamp).toISOString();
+    await connection.query(insertQuery, [symbol, value, timestamp]);
   }
 }
 
@@ -97,7 +100,8 @@ async function fetchBatch(startTime, endTime) {
 
 // 🧠 Main function
 async function main() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = new pkg.Client(dbConfig);
+  await connection.connect();
   await ensureTableExists(connection);
 
   console.log(
@@ -120,7 +124,7 @@ async function main() {
 
     if (data.length > 0) {
       await insertPrices(connection, data, symbol);
-      console.log(`✅ Inserted ${data.length} rows into MySQL`);
+      console.log(`✅ Inserted ${data.length} rows into PostgreSQL`);
     } else {
       console.log(`⚠️ No data returned for this batch`);
     }

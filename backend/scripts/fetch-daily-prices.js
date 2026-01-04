@@ -37,18 +37,22 @@ async function fetchAndSave(symbol, start, end) {
     console.log(data);
     if (!data?.data?.length) return console.log("No price data returned.");
 
-    // MySQL connection
+    // PostgreSQL connection
     const pool = getPool();
 
-    // Insert into DB
-    const insertQuery = `INSERT IGNORE INTO daily_prices (symbol, price_usd, price_date) VALUES (?, ?, ?)`;
+    // Insert into DB (PostgreSQL syntax)
+    const insertQuery = `
+      INSERT INTO daily_prices (symbol, price_usd, price_date)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (symbol, price_date) DO NOTHING
+    `;
 
     let insertCount = 0;
     for (const row of data.data) {
       let price = row.value;
       let time = row.timestamp;
 
-      await pool.execute(insertQuery, [symbol, price, time]);
+      await pool.query(insertQuery, [symbol, price, time]);
       insertCount++;
     }
 

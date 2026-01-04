@@ -46,17 +46,20 @@ async function fetchAndStorePrices() {
     }
 
     if (values.length) {
-      await pool.query(
-        `
-        INSERT INTO current_prices (symbol, value, last_updated)
-        VALUES ?
-        ON DUPLICATE KEY UPDATE
-          value = VALUES(value),
-          last_updated = VALUES(last_updated)
-        `,
-        [values]
-      );
-      console.log(`Inserted ${symbol} price in to databse`);
+      // PostgreSQL: Insert each price with ON CONFLICT
+      for (const [symbol, value, lastUpdated] of values) {
+        await pool.query(
+          `
+          INSERT INTO current_prices (symbol, price_usd, last_updated)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (symbol) DO UPDATE
+          SET price_usd = EXCLUDED.price_usd,
+              last_updated = EXCLUDED.last_updated
+          `,
+          [symbol, value, lastUpdated]
+        );
+        console.log(`✅ Updated ${symbol} price in database: $${value}`);
+      }
     } else {
       console.warn("⚠️ No valid token prices to insert this cycle.");
     }

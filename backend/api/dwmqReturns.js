@@ -35,14 +35,16 @@ export default async function handler(req, res) {
     const sql = `
       SELECT price_date, price_usd
       FROM daily_prices
-      WHERE symbol = ?
+      WHERE symbol = $1
       ORDER BY price_date ASC
     `;
-    const [rows] = await pool.execute(sql, [symbol.toUpperCase()]);
+    const result = await pool.query(sql, [symbol.toUpperCase()]);
 
-    if (!rows.length) {
+    if (!result.rows.length) {
       return res.status(404).json({ error: "No data found for this symbol" });
     }
+
+    const rows = result.rows;
 
     // Calculate returns for all frequencies
     const monthlyReturns = calculateMonthlyReturns(rows);
