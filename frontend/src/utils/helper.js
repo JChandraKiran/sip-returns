@@ -30,8 +30,10 @@ export function getYearsAgo(years) {
 }
 
 export function decimalFormat(value) {
-  if (value >= 1000) return value.toFixed(2);
-  if (value >= 10) return value.toFixed(4);
-  if (value >= 0.01) return value.toFixed(6);
-  return value.toFixed(8);
+  if (value == null || value === undefined || isNaN(value)) return "0.00";
+  const num = parseFloat(value);
+  if (num >= 1000) return num.toFixed(2);
+  if (num >= 10) return num.toFixed(4);
+  if (num >= 0.01) return num.toFixed(6);
+  return num.toFixed(8);
 }

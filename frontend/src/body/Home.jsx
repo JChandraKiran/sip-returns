@@ -22,7 +22,7 @@ import ResultHeading from "../components/Typography/ResultHeading/ResultHeading"
 
 import ArrowDownIcon from "../components/Icons/ArrowDownIcon";
 import ArrowUpIcon from "../components/Icons/ArrowUpIcon";
-import { colors } from "../utils/colors";
+import { borderRadius, colors } from "../utils/colors";
 
 export default function Home() {
   const cryptocurrencyOptions = [
@@ -157,7 +157,7 @@ export default function Home() {
       return;
     }
 
-    if (new Date(fromDate) >= new Date(toDate)) {
+    if (method === "dca" && new Date(fromDate) >= new Date(toDate)) {
       setError("From date must be before To date.");
       return;
     }
@@ -168,13 +168,15 @@ export default function Home() {
         cryptocurrency,
         method,
         fromDate,
-        toDate,
-        frequency,
         amount: parseFloat(amount),
       };
 
-      if (frequency === "weekly") {
-        params.dayOfWeek = dayOfWeek;
+      if (method === "dca") {
+        params.toDate = toDate;
+        params.frequency = frequency;
+        if (frequency === "weekly") {
+          params.dayOfWeek = dayOfWeek;
+        }
       }
 
       const response = await axiosInstance.get("/sip-returns", { params });
@@ -258,47 +260,53 @@ export default function Home() {
             flex: "1",
             maxWidth: "calc(60% - 10px)",
             boxSizing: "border-box",
-            margin: "20px",
+            margin: "10px",
           }}
         >
           {/* Method Selection Section */}
-          <div style={{ width: "100%" }}>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <Button
-                onClick={handleDCAClick}
-                className="primary"
-                style={{
-                  background:
-                    method === "dca" ? colors.primary : colors.bgWhite,
-                  color:
-                    method === "dca" ? colors.textLight : colors.textSecondary,
-                  border: `2px solid ${
-                    method === "dca" ? colors.primary : colors.gray300
-                  }`,
-                  fontWeight: method === "dca" ? "600" : "500",
-                }}
-              >
-                DCA
-              </Button>
-              <Button
-                onClick={handleLumpsumClick}
-                className="primary"
-                style={{
-                  background:
-                    method === "lumpsum" ? colors.primary : colors.bgWhite,
-                  color:
-                    method === "lumpsum"
-                      ? colors.textLight
-                      : colors.textSecondary,
-                  border: `2px solid ${
-                    method === "lumpsum" ? colors.primary : colors.gray300
-                  }`,
-                  fontWeight: method === "lumpsum" ? "600" : "500",
-                }}
-              >
-                Lumpsum
-              </Button>
-            </div>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              gap: "10px",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Button
+              onClick={handleDCAClick}
+              className="primary"
+              style={{
+                background: method === "dca" ? colors.primary : colors.bgWhite,
+                color:
+                  method === "dca" ? colors.textLight : colors.textSecondary,
+                border: `2px solid ${
+                  method === "dca" ? colors.primary : colors.gray300
+                }`,
+                fontWeight: method === "dca" ? "600" : "500",
+                borderRadius: borderRadius.xl,
+              }}
+            >
+              DCA
+            </Button>
+            <Button
+              onClick={handleLumpsumClick}
+              className="primary"
+              style={{
+                background:
+                  method === "lumpsum" ? colors.primary : colors.bgWhite,
+                color:
+                  method === "lumpsum"
+                    ? colors.textLight
+                    : colors.textSecondary,
+                border: `2px solid ${
+                  method === "lumpsum" ? colors.primary : colors.gray300
+                }`,
+                fontWeight: method === "lumpsum" ? "600" : "500",
+                borderRadius: borderRadius.xl,
+              }}
+            >
+              Lumpsum
+            </Button>
           </div>
 
           {/* Cryptocurrency Section */}
@@ -329,9 +337,14 @@ export default function Home() {
               display: "flex",
               flexDirection: "column",
               alignItems: "flex-start",
+              gap: "7px",
             }}
           >
-            <SideHeading text={"Duration:"} style={{ textAlign: "left" }} />
+            {method === "dca" ? (
+              <SideHeading text={"Duration:"} style={{ textAlign: "left" }} />
+            ) : (
+              <SideHeading text={"Date:"} style={{ textAlign: "left" }} />
+            )}
             <div
               style={{
                 display: "flex",
@@ -348,16 +361,18 @@ export default function Home() {
                   gap: "20px",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "500",
-                    color: colors.textSecondary,
-                    textAlign: "left",
-                  }}
-                >
-                  From:
-                </div>
+                {method === "dca" && (
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "500",
+                      color: colors.textSecondary,
+                      textAlign: "left",
+                    }}
+                  >
+                    From:
+                  </div>
+                )}
                 <DateInput
                   id="from-date"
                   value={fromDate}
@@ -366,112 +381,124 @@ export default function Home() {
                   max={formatDate(getYesterday())}
                 />
               </div>
-              <div
-                style={{
-                  flex: "1",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "20px",
-                }}
-              >
+              {method === "dca" && (
                 <div
                   style={{
-                    fontSize: "16px",
-                    fontWeight: "500",
-                    color: colors.textSecondary,
-                    textAlign: "left",
+                    flex: "1",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "20px",
                   }}
                 >
-                  To:
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "500",
+                      color: colors.textSecondary,
+                      textAlign: "left",
+                    }}
+                  >
+                    To:
+                  </div>
+                  <DateInput
+                    id="to-date"
+                    value={toDate}
+                    onChange={handleToDateChange}
+                    min={getMinDateForFrequency(frequency, cryptocurrency)}
+                    max={formatDate(getYesterday())}
+                  />
                 </div>
-                <DateInput
-                  id="to-date"
-                  value={toDate}
-                  onChange={handleToDateChange}
-                  min={getMinDateForFrequency(frequency, cryptocurrency)}
-                  max={formatDate(getYesterday())}
-                />
-              </div>
+              )}
             </div>
-          </div>
-          {/* Date Range Slider */}
-          {minDates && minDates[cryptocurrency.toUpperCase()] && (
-            <div
-              style={{
-                display: "flex",
-                width: "100%",
-                justifyContent: "center",
-                marginTop: "8px",
-              }}
-            >
-              <div style={{ width: "70%" }}>
-                <DateRangeSlider
-                  minDate={getMinDateForFrequency(frequency, cryptocurrency)}
-                  maxDate={formatDate(getYesterday())}
-                  onChange={(f, t) => {
-                    setFromDate(f);
-                    setToDate(t);
-                    setSelectedChip(null);
+            {/* Date Range Slider */}
+            {method === "dca" &&
+              minDates &&
+              minDates[cryptocurrency.toUpperCase()] && (
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    justifyContent: "center",
+                    marginTop: "8px",
                   }}
-                  fromDate={fromDate}
-                  toDate={toDate}
+                >
+                  <div style={{ width: "70%" }}>
+                    <DateRangeSlider
+                      minDate={getMinDateForFrequency(
+                        frequency,
+                        cryptocurrency
+                      )}
+                      maxDate={formatDate(getYesterday())}
+                      onChange={(f, t) => {
+                        setFromDate(f);
+                        setToDate(t);
+                        setSelectedChip(null);
+                      }}
+                      fromDate={fromDate}
+                      toDate={toDate}
+                    />
+                  </div>
+                </div>
+              )}
+
+            {/* Duration Chips */}
+            {method === "dca" && (
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: "-8px",
+                }}
+              >
+                <ChipSelect
+                  chips={durationChips}
+                  selectedChip={selectedChip}
+                  onChange={onChipChange}
                 />
               </div>
-            </div>
-          )}
-
-          {/* Duration Chips */}
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "-8px",
-            }}
-          >
-            <ChipSelect
-              chips={durationChips}
-              selectedChip={selectedChip}
-              onChange={onChipChange}
-            />
+            )}
           </div>
 
           {/* Frequency Section */}
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "80px",
-            }}
-          >
+          {method === "dca" && (
             <div
               style={{
                 width: "100%",
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "flex-start",
+                gap: "80px",
               }}
             >
-              <SideHeading text={"Frequency:"} style={{ textAlign: "left" }} />
-              <Select
-                id="frequency"
-                value={frequency}
-                onChange={handleFrequencyChange}
-                options={frequencyOptions}
-                style={{ width: "100%" }}
-              />
-            </div>
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-              }}
-            >
+              <div
+                style={{
+                  width: "50%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                }}
+              >
+                <SideHeading
+                  text={"Frequency:"}
+                  style={{ textAlign: "left" }}
+                />
+                <Select
+                  id="frequency"
+                  value={frequency}
+                  onChange={handleFrequencyChange}
+                  options={frequencyOptions}
+                  style={{ width: "100%" }}
+                />
+              </div>
               {frequency === "weekly" && (
-                <>
+                <div
+                  style={{
+                    width: "30%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                  }}
+                >
                   <SideHeading
                     text={"Day of Week:"}
                     style={{ textAlign: "left" }}
@@ -483,11 +510,10 @@ export default function Home() {
                     options={dayOfWeekOptions}
                     style={{ width: "100%" }}
                   />
-                </>
+                </div>
               )}
             </div>
-          </div>
-
+          )}
           {/* Day of Week Section (conditional) */}
 
           {/* Amount Section */}
@@ -552,90 +578,201 @@ export default function Home() {
             <div
               style={{ display: "flex", flexDirection: "column", gap: "3px" }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <ResultHeading label="No of investments" />
-                <span
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: colors.textSecondary,
-                  }}
-                >
-                  {loading ? "..." : result?.noOfInvestments || "-"}
-                </span>
-              </div>
+              {method === "dca" ? (
+                <>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading label="No of investments" />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      {loading ? "..." : result?.noOfInvestments || "-"}
+                    </span>
+                  </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <ResultHeading label="Total Invested" />
-                <span
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: colors.info,
-                  }}
-                >
-                  {loading
-                    ? "..."
-                    : result
-                    ? `$${decimalFormat(result.totalInvested)}`
-                    : "-"}
-                </span>
-              </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading label="Total Invested" />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.info,
+                      }}
+                    >
+                      {loading
+                        ? "..."
+                        : result
+                        ? `$${decimalFormat(result.totalInvested)}`
+                        : "-"}
+                    </span>
+                  </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <ResultHeading
-                  label={`Accumulated ${
-                    result?.cryptocurrency?.toUpperCase() || "Crypto"
-                  }`}
-                />
-                <span
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: colors.textSecondary,
-                  }}
-                >
-                  {loading
-                    ? "..."
-                    : result
-                    ? decimalFormat(result.accumulatedUnits)
-                    : "-"}
-                </span>
-              </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading
+                      label={`Accumulated ${
+                        result?.cryptocurrency?.toUpperCase() || "Crypto"
+                      }`}
+                    />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      {loading
+                        ? "..."
+                        : result
+                        ? decimalFormat(result.accumulatedUnits)
+                        : "-"}
+                    </span>
+                  </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <ResultHeading label="Average Price" />
-                <span
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: colors.textSecondary,
-                  }}
-                >
-                  {loading
-                    ? "..."
-                    : result
-                    ? `$${decimalFormat(result.averagePrice)}`
-                    : "-"}
-                </span>
-              </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading label="Average Price" />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      {loading
+                        ? "..."
+                        : result
+                        ? `$${decimalFormat(result.averagePrice)}`
+                        : "-"}
+                    </span>
+                  </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <ResultHeading label="Last Traded Price" />
-                <span
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: colors.primary,
-                  }}
-                >
-                  {loading
-                    ? "..."
-                    : result
-                    ? `$${decimalFormat(result.todayPrice)}`
-                    : "-"}
-                </span>
-              </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading label="Last Traded Price" />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.primary,
+                      }}
+                    >
+                      {loading
+                        ? "..."
+                        : result
+                        ? `$${decimalFormat(result.todayPrice)}`
+                        : "-"}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading label="Investment Date" />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      {loading ? "..." : result?.investmentDate || "-"}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading label="Investment Amount" />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.info,
+                      }}
+                    >
+                      {loading
+                        ? "..."
+                        : result?.investmentAmount
+                        ? `$${decimalFormat(result.investmentAmount)}`
+                        : "-"}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading label="Purchase Price" />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      {loading
+                        ? "..."
+                        : result?.investmentPrice
+                        ? `$${decimalFormat(result.investmentPrice)}`
+                        : "-"}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading
+                      label={`${
+                        result?.cryptocurrency?.toUpperCase() || "Crypto"
+                      } Purchased`}
+                    />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      {loading
+                        ? "..."
+                        : result?.unitsPurchased
+                        ? decimalFormat(result.unitsPurchased)
+                        : "-"}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <ResultHeading label="Current Price" />
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        color: colors.primary,
+                      }}
+                    >
+                      {loading
+                        ? "..."
+                        : result?.currentPrice
+                        ? `$${decimalFormat(result.currentPrice)}`
+                        : "-"}
+                    </span>
+                  </div>
+                </>
+              )}
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <ResultHeading label="Current Value" />
@@ -649,7 +786,11 @@ export default function Home() {
                   {loading
                     ? "..."
                     : result
-                    ? `$${decimalFormat(result.ValueOfAccumulatedUnits)}`
+                    ? `$${decimalFormat(
+                        method === "dca"
+                          ? result.ValueOfAccumulatedUnits
+                          : result.currentValue
+                      )}`
                     : "-"}
                 </span>
               </div>
@@ -681,8 +822,10 @@ export default function Home() {
                     color: loading
                       ? colors.textSecondary
                       : result
-                      ? result.ValueOfAccumulatedUnits - result.totalInvested >=
-                        0
+                      ? (method === "dca"
+                          ? result.ValueOfAccumulatedUnits -
+                            result.totalInvested
+                          : result.absoluteReturns) >= 0
                         ? colors.success
                         : colors.danger
                       : colors.textSecondary,
@@ -692,15 +835,22 @@ export default function Home() {
                     "..."
                   ) : result ? (
                     <>
-                      {(
-                        ((result.ValueOfAccumulatedUnits -
-                          result.totalInvested) *
-                          100) /
-                        result.totalInvested
-                      ).toFixed(2)}
+                      {method === "dca"
+                        ? result.ValueOfAccumulatedUnits && result.totalInvested
+                          ? (
+                              ((result.ValueOfAccumulatedUnits -
+                                result.totalInvested) *
+                                100) /
+                              result.totalInvested
+                            ).toFixed(2)
+                          : "0.00"
+                        : result.percentageReturns != null
+                        ? result.percentageReturns.toFixed(2)
+                        : "0.00"}
                       %
-                      {result.ValueOfAccumulatedUnits - result.totalInvested >=
-                      0 ? (
+                      {(method === "dca"
+                        ? result.ValueOfAccumulatedUnits - result.totalInvested
+                        : result.absoluteReturns) >= 0 ? (
                         <ArrowUpIcon />
                       ) : (
                         <ArrowDownIcon />
@@ -731,8 +881,16 @@ export default function Home() {
               </div>
             ) : result ? (
               <InvestmentDonutChart
-                investedValue={result.totalInvested}
-                currentValue={result.ValueOfAccumulatedUnits}
+                investedValue={
+                  method === "dca"
+                    ? result.totalInvested
+                    : result.investmentAmount
+                }
+                currentValue={
+                  method === "dca"
+                    ? result.ValueOfAccumulatedUnits
+                    : result.currentValue
+                }
               />
             ) : (
               <div
