@@ -3,7 +3,7 @@ import cron from "node-cron";
 import { getPool } from "../lib/db.js";
 import "dotenv/config";
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY; // your key here
-const TOKENS = ["BTC", "ETH", "SOL"]; // add more symbols if needed
+const TOKENS = ["BTC", "ETH", "SOL", "BNB", "ADA", "XRP", "DOGE", "LTC", "BCH", "TRX", "LINK"];
 
 const pool = getPool();
 

@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import { useState, useEffect } from "react";
 import Select from "../components/Select";
 import TextInput from "../components/TextInput";
@@ -68,8 +68,36 @@ export default function Home() {
     return stored ? JSON.parse(stored) : null;
   });
 
-  const handleCryptocurrencyChange = (event) =>
-    setCryptocurrency(event.target.value);
+  // Helper function to get min date based on frequency
+  const getMinDateForFrequency = (freq, crypto) => {
+    if (!minDates || !minDates[crypto.toUpperCase()]) {
+      return null;
+    }
+
+    const tokenMinDates = minDates[crypto.toUpperCase()];
+
+    // For hourly frequency, use hourly min date
+    if (freq === "hourly") {
+      return tokenMinDates.hourly ? tokenMinDates.hourly.split("T")[0] : null;
+    }
+
+    // For other frequencies (daily, weekly, monthly), use daily min date
+    return tokenMinDates.daily ? tokenMinDates.daily.split("T")[0] : null;
+  };
+
+  const handleCryptocurrencyChange = (event) => {
+    const newCrypto = event.target.value;
+    setCryptocurrency(newCrypto);
+
+    // Adjust fromDate if it's before the minimum allowed date for the new cryptocurrency
+    if (minDates && minDates[newCrypto.toUpperCase()]) {
+      const minDate = getMinDateForFrequency(frequency, newCrypto);
+      if (minDate && new Date(fromDate) < new Date(minDate)) {
+        setFromDate(formatDate(new Date(minDate)));
+        setSelectedChip(null);
+      }
+    }
+  };
   const handleMethodChange = (newMethod) => setMethod(newMethod);
   const handleDCAClick = () => handleMethodChange("dca");
   const handleLumpsumClick = () => handleMethodChange("lumpsum");
@@ -81,7 +109,19 @@ export default function Home() {
     setToDate(event.target.value);
     setSelectedChip(null);
   };
-  const handleFrequencyChange = (event) => setFrequency(event.target.value);
+  const handleFrequencyChange = (event) => {
+    const newFrequency = event.target.value;
+    setFrequency(newFrequency);
+
+    // Adjust fromDate if it's before the minimum allowed date for the new frequency
+    if (minDates && minDates[cryptocurrency.toUpperCase()]) {
+      const minDate = getMinDateForFrequency(newFrequency, cryptocurrency);
+      if (minDate && new Date(fromDate) < new Date(minDate)) {
+        setFromDate(formatDate(new Date(minDate)));
+        setSelectedChip(null);
+      }
+    }
+  };
   const handleDayOfWeekChange = (event) => setDayOfWeek(event.target.value);
   const handleAmountChange = (event) => setAmount(event.target.value);
   const onChipChange = (selectedChip) => {
@@ -124,8 +164,6 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // 🌐 Backend URL
-      const backendURL = "/api/sip-returns";
       const params = {
         cryptocurrency,
         method,
@@ -139,8 +177,7 @@ export default function Home() {
         params.dayOfWeek = dayOfWeek;
       }
 
-      const response = await axios.get(backendURL, { params });
-      console.log(response.data);
+      const response = await axiosInstance.get("/sip-returns", { params });
       setResult(response.data);
     } catch (err) {
       console.error(err);
@@ -166,8 +203,7 @@ export default function Home() {
   useEffect(() => {
     const getMinDates = async () => {
       try {
-        const backendURL = "/api/min-dates";
-        const response = await axios.get(backendURL);
+        const response = await axiosInstance.get("/min-dates");
         setMinDates(response.data);
         localStorage.setItem("minDates", JSON.stringify(response.data));
       } catch (error) {
@@ -326,6 +362,8 @@ export default function Home() {
                   id="from-date"
                   value={fromDate}
                   onChange={handleFromDateChange}
+                  min={getMinDateForFrequency(frequency, cryptocurrency)}
+                  max={formatDate(getYesterday())}
                 />
               </div>
               <div
@@ -350,6 +388,8 @@ export default function Home() {
                   id="to-date"
                   value={toDate}
                   onChange={handleToDateChange}
+                  min={getMinDateForFrequency(frequency, cryptocurrency)}
+                  max={formatDate(getYesterday())}
                 />
               </div>
             </div>
@@ -366,7 +406,7 @@ export default function Home() {
             >
               <div style={{ width: "70%" }}>
                 <DateRangeSlider
-                  minDate={minDates[cryptocurrency.toUpperCase()].split("T")[0]}
+                  minDate={getMinDateForFrequency(frequency, cryptocurrency)}
                   maxDate={formatDate(getYesterday())}
                   onChange={(f, t) => {
                     setFromDate(f);

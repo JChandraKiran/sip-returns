@@ -1,0 +1,36 @@
+# Development and utility scripts
+dev-scripts/
+scripts/
+check-date-range.js
+check-supabase-data.js
+check-symbols.js
+debug-insert.js
+fix-sequence.js
+test-supabase-connection.js
+update-current-prices.js
+update-daily-prices.js
+update-hourly-prices.js
+update-link-hourly.js
+historical_prices.js
+
+# Documentation
+FILE_CLEANUP_PLAN.md
+SUPABASE_MIGRATION_GUIDE.md
+SUPABASE_QUICKSTART.md
+*.md
+
+# Environment and local files
+.env
+.env.local
+.env.supabase.example
+
+# Export scripts
+export-data.bat
+export-data.sh
+
+# Git
+.git
+.gitignore
+
+# Node modules (already ignored by default)
+node_modules/

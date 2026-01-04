@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import { useState, useEffect } from "react";
 import Select from "../components/Select";
 import Card from "../components/Card/Card";
@@ -36,8 +36,7 @@ export default function ReturnsCalendar() {
     setLoading(true);
 
     try {
-      const backendURL = "/api/dwmqReturns";
-      const response = await axios.get(backendURL, {
+      const response = await axiosInstance.get("/dwmqReturns", {
         params: { symbol: cryptocurrency },
       });
       setData(response.data);
